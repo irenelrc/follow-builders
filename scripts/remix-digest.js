@@ -240,32 +240,43 @@ async function callOpenAI(systemPrompt, userMessage, provider, maxTokens) {
   return text;
 }
 
+// -- Helpers -----------------------------------------------------------------
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Delay between sequential LLM calls to avoid rate limiting (429/529).
+const CALL_DELAY_MS = 1000;
+
 // -- Multi-Step LLM Calls & Digest Assembly ----------------------------------
 
 async function summarizeTweets(xBuilders, prompt, provider) {
-  const tasks = xBuilders.map(async (builder) => {
+  const results = [];
+  for (const builder of xBuilders) {
     const userMsg = JSON.stringify({
-      author: builder.author,
+      name: builder.name,
       handle: builder.handle,
+      bio: builder.bio,
       tweets: builder.tweets,
     });
     try {
-      return await callLLM(prompt, userMsg, { provider });
+      const summary = await callLLM(prompt, userMsg, { provider });
+      results.push(summary);
     } catch (err) {
       process.stderr.write(JSON.stringify({
         status: 'warning',
         step: 'remix-tweets',
-        message: `Skipping tweets for ${builder.author}: ${err.message}`,
+        message: `Skipping tweets for ${builder.name}: ${err.message}`,
         details: { builder: builder.handle, httpStatus: err.httpStatus },
       }) + '\n');
-      return null;
     }
-  });
-  return (await Promise.all(tasks)).filter(Boolean);
+    await sleep(CALL_DELAY_MS);
+  }
+  return results;
 }
 
 async function summarizePodcasts(podcasts, prompt, provider) {
-  const tasks = podcasts.map(async (podcast) => {
+  const results = [];
+  for (const podcast of podcasts) {
     const userMsg = JSON.stringify({
       name: podcast.name,
       title: podcast.title,
@@ -274,7 +285,8 @@ async function summarizePodcasts(podcasts, prompt, provider) {
       publishedAt: podcast.publishedAt,
     });
     try {
-      return await callLLM(prompt, userMsg, { provider });
+      const summary = await callLLM(prompt, userMsg, { provider });
+      results.push(summary);
     } catch (err) {
       process.stderr.write(JSON.stringify({
         status: 'warning',
@@ -282,14 +294,15 @@ async function summarizePodcasts(podcasts, prompt, provider) {
         message: `Skipping podcast "${podcast.name}": ${err.message}`,
         details: { podcast: podcast.name, httpStatus: err.httpStatus },
       }) + '\n');
-      return null;
     }
-  });
-  return (await Promise.all(tasks)).filter(Boolean);
+    await sleep(CALL_DELAY_MS);
+  }
+  return results;
 }
 
 async function summarizeBlogs(blogs, prompt, provider) {
-  const tasks = blogs.map(async (blog) => {
+  const results = [];
+  for (const blog of blogs) {
     const userMsg = JSON.stringify({
       source: blog.source,
       title: blog.title,
@@ -299,7 +312,8 @@ async function summarizeBlogs(blogs, prompt, provider) {
       publishedAt: blog.publishedAt,
     });
     try {
-      return await callLLM(prompt, userMsg, { provider });
+      const summary = await callLLM(prompt, userMsg, { provider });
+      results.push(summary);
     } catch (err) {
       process.stderr.write(JSON.stringify({
         status: 'warning',
@@ -307,10 +321,10 @@ async function summarizeBlogs(blogs, prompt, provider) {
         message: `Skipping blog "${blog.title}": ${err.message}`,
         details: { blog: blog.title, httpStatus: err.httpStatus },
       }) + '\n');
-      return null;
     }
-  });
-  return (await Promise.all(tasks)).filter(Boolean);
+    await sleep(CALL_DELAY_MS);
+  }
+  return results;
 }
 
 async function assembleDigest(tweetSummaries, podcastSummaries, blogSummaries, prompt, provider) {

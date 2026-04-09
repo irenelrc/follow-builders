@@ -154,13 +154,31 @@ function detectProvider(modelOverride) {
   process.exit(1);
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [5000, 15000, 30000]; // 5s, 15s, 30s — escalating backoff
+
 async function callLLM(systemPrompt, userMessage, options = {}) {
   const { provider, maxTokens = DEFAULT_MAX_TOKENS } = options;
+  const callFn = provider.name === 'anthropic' ? callAnthropic : callOpenAI;
 
-  if (provider.name === 'anthropic') {
-    return callAnthropic(systemPrompt, userMessage, provider, maxTokens);
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await callFn(systemPrompt, userMessage, provider, maxTokens);
+    } catch (err) {
+      const retryable = err.httpStatus === 429 || err.httpStatus === 529;
+      if (retryable && attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[attempt];
+        process.stderr.write(JSON.stringify({
+          status: 'info',
+          step: 'retry',
+          message: `${err.httpStatus} — retrying in ${delay / 1000}s (attempt ${attempt + 1}/${MAX_RETRIES})`,
+        }) + '\n');
+        await sleep(delay);
+        continue;
+      }
+      throw err;
+    }
   }
-  return callOpenAI(systemPrompt, userMessage, provider, maxTokens);
 }
 
 async function callAnthropic(systemPrompt, userMessage, provider, maxTokens) {
@@ -245,7 +263,7 @@ async function callOpenAI(systemPrompt, userMessage, provider, maxTokens) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Delay between sequential LLM calls to avoid rate limiting (429/529).
-const CALL_DELAY_MS = 1000;
+const CALL_DELAY_MS = 2000;
 
 // -- Multi-Step LLM Calls & Digest Assembly ----------------------------------
 

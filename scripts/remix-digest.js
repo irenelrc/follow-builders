@@ -268,6 +268,10 @@ const CALL_DELAY_MS = 2000;
 // -- Multi-Step LLM Calls & Digest Assembly ----------------------------------
 
 async function summarizeTweets(xBuilders, prompt, provider) {
+  const tweetPrompt = prompt
+    + '\n\nIMPORTANT: For every tweet you reference, you MUST include its direct URL '
+    + '(e.g. https://x.com/levie/status/123) on its own line after the summary. '
+    + 'No URL = do not include that tweet.';
   const results = [];
   for (const builder of xBuilders) {
     const userMsg = JSON.stringify({
@@ -277,7 +281,7 @@ async function summarizeTweets(xBuilders, prompt, provider) {
       tweets: builder.tweets,
     });
     try {
-      const summary = await callLLM(prompt, userMsg, { provider });
+      const summary = await callLLM(tweetPrompt, userMsg, { provider });
       results.push(summary);
     } catch (err) {
       process.stderr.write(JSON.stringify({
@@ -347,6 +351,9 @@ async function summarizeBlogs(blogs, prompt, provider) {
 
 async function assembleDigest(tweetSummaries, podcastSummaries, blogSummaries, prompt, provider) {
   const userMsg = JSON.stringify({
+    date: new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    }),
     tweetSummaries,
     podcastSummaries,
     blogSummaries,

@@ -691,9 +691,11 @@ async function main() {
   const blogsOnly = args.includes('--blogs-only');
 
   // If a specific --*-only flag is set, only that feed type runs.
-  // If no flag is set, all three run.
+  // If no flag is set, tweets + blogs run. Podcast is synced from upstream
+  // (see .github/workflows/sync-podcast.yml) because pod2txt keys are
+  // private to the upstream author — only runs here if explicitly requested.
   const runTweets = tweetsOnly || (!podcastsOnly && !blogsOnly);
-  const runPodcasts = podcastsOnly || (!tweetsOnly && !blogsOnly);
+  const runPodcasts = podcastsOnly;
   const runBlogs = blogsOnly || (!tweetsOnly && !podcastsOnly);
 
   const xBearerToken = process.env.X_BEARER_TOKEN;

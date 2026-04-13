@@ -49,6 +49,7 @@
   ],
   "x_accounts": [
     { "name": "Andrej Karpathy", "handle": "karpathy" },
+    { "name": "grapeot", "handle": "grapeot" },
     { "name": "Swyx", "handle": "swyx" },
     { "name": "Josh Woodward", "handle": "joshwoodward" },
     { "name": "Kevin Weil", "handle": "kevinweil" },

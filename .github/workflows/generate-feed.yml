@@ -34,9 +34,8 @@ jobs:
         run: cd scripts && npm install
 
       - name: Generate feeds
-        env:
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-          POD2TXT_API_KEY: ${{ secrets.POD2TXT_API_KEY }}
+        # Only blogs are fetched locally. Tweets (X_BEARER_TOKEN) and podcasts
+        # (POD2TXT_API_KEY) are synced from upstream via sync-upstream.yml.
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" != "all" ]; then
             cd scripts && node generate-feed.js --${{ inputs.mode }}

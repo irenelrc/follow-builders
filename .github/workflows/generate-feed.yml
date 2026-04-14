@@ -2,20 +2,20 @@ name: Generate Feeds
 
 on:
   schedule:
-    # All feeds (tweets, podcasts, blogs): once daily at 6am UTC
+    # Default: blogs only (tweets/podcasts come from sync-upstream.yml).
+    # Runs daily at 6am UTC.
     - cron: '0 6 * * *'
   workflow_dispatch:
     inputs:
       mode:
         description: 'What to fetch'
         required: false
-        default: 'all'
+        default: 'blogs-only'
         type: choice
         options:
-          - all
+          - blogs-only
           - tweets-only
           - podcasts-only
-          - blogs-only
 
 jobs:
   generate:
@@ -36,12 +36,10 @@ jobs:
       - name: Generate feeds
         # Only blogs are fetched locally. Tweets (X_BEARER_TOKEN) and podcasts
         # (POD2TXT_API_KEY) are synced from upstream via sync-upstream.yml.
+        # Cron has no inputs.mode → fallback to --blogs-only.
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" != "all" ]; then
-            cd scripts && node generate-feed.js --${{ inputs.mode }}
-          else
-            cd scripts && node generate-feed.js
-          fi
+          MODE="${{ inputs.mode }}"
+          cd scripts && node generate-feed.js --${MODE:-blogs-only}
 
       - name: Commit and push feeds
         run: |

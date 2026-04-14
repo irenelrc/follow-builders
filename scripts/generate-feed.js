@@ -690,19 +690,12 @@ async function main() {
   const podcastsOnly = args.includes('--podcasts-only');
   const blogsOnly = args.includes('--blogs-only');
 
-  // Default behavior: only blogs run locally.
-  // Tweets and podcasts are synced from upstream (see sync-upstream.yml) because:
-  //   - X API Free tier denies read endpoints (needs Basic tier $100/mo)
-  //   - pod2txt key is private to the upstream author
-  // To enable self-fetching later, flip the default here to true.
-  let runTweets = false;
-  let runPodcasts = false;
-  let runBlogs = true;
-
-  // Explicit --*-only flags override: run only that one type.
-  if (tweetsOnly)   { runTweets = true;  runPodcasts = false; runBlogs = false; }
-  if (podcastsOnly) { runTweets = false; runPodcasts = true;  runBlogs = false; }
-  if (blogsOnly)    { runTweets = false; runPodcasts = false; runBlogs = true;  }
+  // If a specific --*-only flag is set, only that feed type runs.
+  // If no flag is set, all three run (what to fetch is a deployment decision
+  // — see .github/workflows/generate-feed.yml, which passes --blogs-only).
+  const runTweets = tweetsOnly || (!podcastsOnly && !blogsOnly);
+  const runPodcasts = podcastsOnly || (!tweetsOnly && !blogsOnly);
+  const runBlogs = blogsOnly || (!tweetsOnly && !podcastsOnly);
 
   const xBearerToken = process.env.X_BEARER_TOKEN;
   const pod2txtKey = process.env.POD2TXT_API_KEY;

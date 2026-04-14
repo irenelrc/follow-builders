@@ -29,6 +29,10 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const ANTHROPIC_VERSION = '2023-06-01';
 const DEFAULT_MAX_TOKENS = 4096;
+// Final digest concatenates all sections (tweets + podcasts + blogs).
+// 4096 is not enough when blog posts are long — response gets truncated
+// mid-section. Bump to 16384 for the assemble step only.
+const ASSEMBLE_MAX_TOKENS = 16384;
 const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 const DEFAULT_OPENAI_MODEL = 'gpt-4o';
 
@@ -216,6 +220,14 @@ async function callAnthropic(systemPrompt, userMessage, provider, maxTokens) {
   if (!text) {
     throw new Error('Empty response from LLM');
   }
+  if (json.stop_reason === 'max_tokens') {
+    process.stderr.write(JSON.stringify({
+      status: 'warning',
+      step: 'anthropic-call',
+      message: 'Response hit max_tokens — output is likely truncated',
+      details: { model: provider.model, maxTokens, outputTokens: json.usage?.output_tokens },
+    }) + '\n');
+  }
   return text;
 }
 
@@ -358,7 +370,7 @@ async function assembleDigest(tweetSummaries, podcastSummaries, blogSummaries, p
     podcastSummaries,
     blogSummaries,
   });
-  return callLLM(prompt, userMsg, { provider });
+  return callLLM(prompt, userMsg, { provider, maxTokens: ASSEMBLE_MAX_TOKENS });
 }
 
 async function translateDigest(digestText, prompt, provider, language) {

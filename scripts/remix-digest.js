@@ -29,10 +29,11 @@ const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const ANTHROPIC_VERSION = '2023-06-01';
 const DEFAULT_MAX_TOKENS = 4096;
-// Final digest concatenates all sections (tweets + podcasts + blogs).
-// 4096 is not enough when blog posts are long — response gets truncated
-// mid-section. Bump to 16384 for the assemble step only.
+// Assemble concatenates all section summaries into the final digest.
+// Translate may produce bilingual output (original + Chinese), potentially
+// ~2x the input size. 4096 is not enough for either — bump both.
 const ASSEMBLE_MAX_TOKENS = 16384;
+const TRANSLATE_MAX_TOKENS = 16384;
 const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-4-20250514';
 const DEFAULT_OPENAI_MODEL = 'gpt-4o';
 
@@ -378,7 +379,7 @@ async function translateDigest(digestText, prompt, provider, language) {
     digest: digestText,
     targetMode: language, // 'zh' or 'bilingual'
   });
-  return callLLM(prompt, userMsg, { provider });
+  return callLLM(prompt, userMsg, { provider, maxTokens: TRANSLATE_MAX_TOKENS });
 }
 
 // -- Main --------------------------------------------------------------------

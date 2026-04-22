@@ -2,8 +2,10 @@
   "seenTweets": {},
   "seenVideos": {},
   "seenArticles": {
-    "https://claude.com/blog/claude-code-desktop-redesign": 1776239033976,
     "https://www.anthropic.com/engineering/managed-agents": 1776411902728,
-    "https://claude.com/blog/claude-managed-agents": 1776411903359
+    "https://claude.com/blog/claude-managed-agents": 1776411903359,
+    "https://www.anthropic.com/engineering/infrastructure-noise": 1776843914969,
+    "https://www.anthropic.com/engineering/claude-code-auto-mode": 1776843916324,
+    "https://claude.com/blog/preparing-your-security-program-for-ai-accelerated-offense": 1776843917051
   }
 }
